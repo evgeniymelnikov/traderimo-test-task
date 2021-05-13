@@ -16,4 +16,8 @@ class FinalProcessor(
     override fun unsubscribe(priceProcessor: PriceProcessor) {
         TODO("Not yet implemented")
     }
+
+    override fun toString(): String {
+        return "FinalProcessor(name='$name')"
+    }
 }

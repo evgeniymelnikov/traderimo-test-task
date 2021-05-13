@@ -6,7 +6,10 @@ import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.concurrent.*;
 
-// todo: add some logging
+// Implementation is based on Plain Java.
+// Subscribers will receive onPrice events which will come in producer (upstream) only after subscribing.
+// So there is not any snapshot logic.
+// Slow subscribers consume only most recent event for particular currency pair.
 public class PriceThrottler implements PriceProcessor {
 
     private final ConcurrentHashMap<PriceProcessor, Subscription> priceProcessorSubscriptionHolder = new ConcurrentHashMap<>();

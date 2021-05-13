@@ -4,12 +4,11 @@ import org.junit.jupiter.api.Test
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 
-// todo: tests
 class PriceThrottlerTest {
 
     @Test
     fun `simple test`() {
-        val priceThrottler = PriceThrottler()
+        val priceThrottler = CoroutinePriceThrottler()
         val finalProcessor1 = FinalProcessor("FP1")
         val finalProcessor2 = FinalProcessor("FP2")
         val executor = Executors.newScheduledThreadPool(4)
