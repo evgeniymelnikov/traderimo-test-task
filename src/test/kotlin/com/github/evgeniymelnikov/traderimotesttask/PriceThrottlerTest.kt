@@ -4,11 +4,12 @@ import org.junit.jupiter.api.Test
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 
+// todo: tests
 class PriceThrottlerTest {
 
     @Test
     fun `simple test`() {
-        val priceThrottler = CoroutinePriceThrottler()
+        val priceThrottler = PriceThrottler()
         val finalProcessor1 = FinalProcessor("FP1")
         val finalProcessor2 = FinalProcessor("FP2")
         val executor = Executors.newScheduledThreadPool(4)
@@ -18,11 +19,12 @@ class PriceThrottlerTest {
         val rates = generateSequence(10, usdRub) + generateSequence(3, usdXtz)
         executor.schedule({
             priceThrottler.subscribe(finalProcessor1)
-        }, 3000, TimeUnit.MILLISECONDS)
+        }, 2000, TimeUnit.MILLISECONDS)
 
         executor.schedule({
+            // priceThrottler.unsubscribe(finalProcessor1)
             priceThrottler.subscribe(finalProcessor2)
-        }, 8000, TimeUnit.MILLISECONDS)
+        }, 4000, TimeUnit.MILLISECONDS)
         rates.forEach {
             if (it.first == usdRub) {
                 Thread.sleep(300)

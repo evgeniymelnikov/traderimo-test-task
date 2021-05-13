@@ -21,6 +21,7 @@ class CoroutinePriceThrottler : PriceProcessor {
         subscribersHolder.computeIfAbsent(priceProcessor) {
             flowHolder.values.toSet()
         }.forEach {
+            // todo: migrate from GlobalScope to custom scope.
             GlobalScope.launch {
                 it.collect { currencyPairRate ->
                     priceProcessor.onPrice(
@@ -35,4 +36,9 @@ class CoroutinePriceThrottler : PriceProcessor {
     override fun unsubscribe(priceProcessor: PriceProcessor) {
         TODO("Not yet implemented")
     }
+
+    private data class CurrencyPairRate(
+        val ccyPair: String,
+        val rate: Double
+    )
 }
