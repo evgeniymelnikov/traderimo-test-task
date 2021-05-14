@@ -1,5 +1,7 @@
 package com.github.evgeniymelnikov.traderimotesttask
 
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancel
@@ -10,17 +12,21 @@ import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.locks.ReentrantReadWriteLock
 import kotlin.concurrent.read
 import kotlin.concurrent.write
+import kotlin.coroutines.EmptyCoroutineContext
 
 // Implementation is based on kotlin coroutines.
 // Subscribers will receive onPrice last events for every currency pairs before subscribing (something like snapshot)
 // and new events which will come in producer (upstream) only after subscribing.
 // Slow subscribers consume only most recent event for particular currency pair.
-class CoroutinePriceThrottler : PriceProcessor {
+class SnapshotPriceThrottler : PriceProcessor {
 
     private val flowHolder = ConcurrentHashMap<String, MutableStateFlow<CurrencyPairRate>>()
     private val subscribersHolder = ConcurrentHashMap<PriceProcessor, Set<CurrencyPairRateFlowSubscription>>()
     private val lock = ReentrantReadWriteLock()
+    private val scope = CoroutineScope(Dispatchers.IO)
 
+    // we don't have to synchronized here (or use lock striping), because vulnerable point for race condition is flowHolder computing,
+    // which is protected being ConcurrentHashMap
     override fun onPrice(ccyPair: String, rate: Double) {
         val currencyPairRate = CurrencyPairRate(ccyPair, rate)
         var firstEvent = false
@@ -49,7 +55,6 @@ class CoroutinePriceThrottler : PriceProcessor {
         lock.read {
             subscribersHolder.computeIfAbsent(priceProcessor) {
                 flowHolder.values.toSet().map {
-                    // todo: migrate from GlobalScope to custom scope.
                     subscribeFlow(it, priceProcessor)
                 }.toSet()
                     .also { println("Got new subscription by $priceProcessor") }
@@ -61,8 +66,7 @@ class CoroutinePriceThrottler : PriceProcessor {
         it: MutableStateFlow<CurrencyPairRate>,
         priceProcessor: PriceProcessor
     ): CurrencyPairRateFlowSubscription {
-        // todo: use custom scope
-        return GlobalScope.launch {
+        return scope.launch {
             it.collect { currencyPairRate ->
                 priceProcessor.onPrice(
                     currencyPairRate.ccyPair,
